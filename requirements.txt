@@ -1,0 +1,16 @@
+fastapi
+uvicorn[standard]
+pydantic
+pydantic-settings
+redis
+rq
+pypdf
+python-docx
+google-api-python-client
+google-auth-httplib2
+google-auth-oauthlib
+openai
+google-generativeai
+python-dotenv
+requests
+python-multipart
