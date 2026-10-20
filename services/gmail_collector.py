@@ -35,7 +35,8 @@ RECRUITMENT_KEYWORDS = [
 BLACKLIST_SENDERS = [
     'no-reply', 'noreply', 'mailer-daemon', 'notification', 'notifications',
     'donotreply', 'newsletter', 'accounts.google.com', 'linkedin.com', 'github.com',
-    'alert', 'billing', 'invoice', 'facture', 'support@'
+    'alert', 'billing', 'invoice', 'facture', 'support@',
+    'netsysteme', 'adiarraa@gmail.com', 'mdiarraa@gmail.com'
 ]
 
 def clean_header_string(header_val):
@@ -143,10 +144,23 @@ class GmailCollector:
                 sender_name, sender_email = parseaddr(from_raw)
                 message_id = msg.get("Message-ID", f"msg-{e_id.decode()}")
 
-                # NIVEAU 3.A : Vérification Blacklist
-                if any(black in sender_email.lower() for black in BLACKLIST_SENDERS):
-                    log(f"[GmailCollector] E-mail ignore (Blacklist) : {sender_email}")
+                # NIVEAU 3.A : Vérification Blacklist & Filtrage des notifications automatiques du site
+                sender_lower = sender_email.lower()
+                sender_name_lower = (sender_name or "").lower()
+                subject_lower = subject.lower()
+
+                # Ignorer les emails émis par le site lui-même ou les adresses internes
+                if any(black in sender_lower for black in BLACKLIST_SENDERS) or "netsysteme" in sender_name_lower:
+                    log(f"[GmailCollector] E-mail ignore (Blacklist / Notification interne) : {sender_name} <{sender_email}>")
                     report["skipped_blacklist"] += 1
+                    mail.store(e_id, '+FLAGS', '\\Seen')
+                    continue
+
+                # Ignorer les notifications générées par le backend NetSystème (ex: "Nouvelle candidature : ...")
+                if subject_lower.startswith("nouvelle candidature") or subject_lower.startswith("confirmation de reception"):
+                    log(f"[GmailCollector] E-mail ignore (Notification automatique NetSysteme) : '{subject}'")
+                    report["skipped_blacklist"] += 1
+                    mail.store(e_id, '+FLAGS', '\\Seen')
                     continue
 
                 # Extraction corps de message
